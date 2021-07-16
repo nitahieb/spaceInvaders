@@ -1,5 +1,6 @@
 import pygame
 import os
+import random
 
 pygame.font.init()
 
@@ -32,9 +33,29 @@ RED_LASER = pygame.image.load(os.path.join("Assets", "pixel_laser_red.png"))
 GREEN_LASER = pygame.image.load(os.path.join("Assets", "pixel_laser_green.png"))
 BLUE_LASER = pygame.image.load(os.path.join("Assets", "pixel_laser_blue.png"))
 YELLOW_LASER = pygame.image.load(os.path.join("Assets", "pixel_laser_yellow.png"))
+BG = pygame.transform.scale(pygame.image.load(os.path.join("Assets", "space.png")), (WIDTH, HEIGHT))
 
 SPACESHIP= pygame.transform.rotate(pygame.transform.scale(SPACESHIP_IMAGE,(SPACESHIP_WIDTH,SPACESHIP_HEIGHT)),180)
 
+
+class Laser:
+    def __init__(self, x, y, img):
+        self.x = x
+        self.y = y
+        self.img = img
+        self.mask = pygame.mask.from_surface(self.img)
+
+    def draw(self):
+        WIN.blit(self.img,(self.x,self.y))
+
+    def move(self, vel):
+        self.y += vel
+
+    def off_screen(self,height):
+        return self.y <= height and self.y >= 0
+
+    def collision(self, obj):
+        return collide(obj,self)
 
 class Ship:
     def __init__(self,x,y,health=100):
@@ -55,6 +76,7 @@ class Ship:
     def get_height(self):
         return self.ship_img.get_height()
 
+
 class Player(Ship):
     def __init__(self,x,y,health=100):
         super().__init__(x,y,health)
@@ -63,6 +85,7 @@ class Player(Ship):
         self.max_health = health
         self.vel = VEL
         self.boost = False
+
 
 class Enemy(Ship):
     COLOR_MAP = {
@@ -104,37 +127,77 @@ def handle_player_bullets(player_bullets,spaceship):
         bullet.y -= BULLET_VEL
 
 
+def collide(obj1, obj2):
+    offset_x = obj2.x - obj1.x
+    offset_y = obj2.y - obj1.y
+    return obj1.mask.overlap(obj2.mask,(offset_x, offset_y)) != None
 
 def main():
     #spaceship = pygame.Rect(430,450,SPACESHIP_WIDTH,SPACESHIP_HEIGHT)
     player_bullets = []
-    level = 1
+    level = 0
     lives = 5
     main_font = pygame.font.SysFont("comicsans",30)
+    lost_font = pygame.font.SysFont("comicsans",60)
+
+    enemies = []
+    wave_length = 5
+    enemy_vel = 1
 
 
     clock = pygame.time.Clock()
+    lost = False
+    lost_count = 0
     run = True
 
     player = Player(430,450)
 
     def redraw_window():
-        WIN.fill(WHITE)
-        player.draw()
+        WIN.blit(BG,(0,0))
+        
         
         if player.boost:
             WIN.blit(FIRE,(player.x+player.get_width()//2-7,player.y+player.get_height()))
         for bullet in player_bullets:
             pygame.draw.rect(WIN,BLACK,bullet)
+
+
+        for enemy in enemies:
+            enemy.draw()
+
+        player.draw()
         lives_label = main_font.render(f"Lives: {lives}", 1, (255,0,255))
         level_label = main_font.render(f"Level: {level}",1,(255,0,255))
         WIN.blit(lives_label,(10,10))
         WIN.blit(level_label,(WIDTH-level_label.get_width()-10,10))
 
+        if lost:
+            lost_label = lost_font.render("You Lost!!",1,(255,255,255))
+            WIN.blit(lost_label,(WIDTH/2-lost_label.get_width()/2,150))
+
         pygame.display.update()
 
     while run:
         clock.tick(FPS)
+        redraw_window()
+
+        if lives <= 0 or player.health <=0:
+            lost = True
+            lost_count += 1
+
+        if lost:
+            if(lost_count> FPS*3 ):
+                run = False
+            else:
+                continue
+
+        if len(enemies) == 0:
+            level += 1
+            wave_length +=5
+            for i in range(wave_length):
+                enemy = Enemy(random.randrange(50,WIDTH-50), random.randrange(-1500,-100),random.choice(["red","blue","green"]))
+                enemies.append(enemy)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -147,9 +210,15 @@ def main():
 
         keys_pressed = pygame.key.get_pressed()
         spaceship_movement(keys_pressed,player)
+
+        for enemy in enemies[:]:
+            enemy.move(enemy_vel)
+            if enemy.y+enemy.get_height() > HEIGHT:
+                lives -= 1
+                enemies.remove(enemy)
         
         handle_player_bullets(player_bullets,player)
-        redraw_window()
+        
 
 
     pygame.quit()
