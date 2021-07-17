@@ -4,9 +4,16 @@ import random
 
 #Loading in assets and setting constants
 pygame.font.init()
+pygame.mixer.init()
+BGMUSIC = pygame.mixer.Sound(os.path.join("Assets","BGmusic.wav"))
+LASER_SOUND= pygame.mixer.Sound(os.path.join("Assets", "laser7.wav"))
+pygame.mixer.Sound.set_volume(BGMUSIC,0.3)
+BGMUSIC.play(-1)
+
 WIDTH,HEIGHT = 900, 500
 WIN = pygame.display.set_mode((WIDTH,HEIGHT))
 pygame.display.set_caption("Space Invaders")
+
 
 WHITE = (255,255,255)
 BLACK = (0,0,0)
@@ -128,6 +135,7 @@ class Player(Ship):
         if self.cool_down_counter == 0:
             laser = Laser(self.x-22,self.y-self.get_height(),self.laser_img)   
             self.lasers.append(laser)
+            pygame.mixer.Sound(LASER_SOUND).play()
             self.cool_down_counter = 1
     
     #Draws ship
@@ -258,12 +266,10 @@ def main():
     level = 0
     main_font = pygame.font.SysFont("comicsans",30)
     lost_font = pygame.font.SysFont("comicsans",60)
-
     enemies = []
     wave_length = 5
     clock = pygame.time.Clock()
     run = True
-    
     player = Player(430,440) #places player
 
     #renders most of game and updates, lost input changes visuals because game over
@@ -313,7 +319,6 @@ def main_menu():
         WIN.blit(BG,(0,0))
         title_label = title_font.render("Press the mouse to begin",1,(255,255,255))
         WIN.blit(title_label,(WIDTH/2 - title_label.get_width()/2,250))
-
         pygame.display.update()
 
         for event in pygame.event.get():
