@@ -158,6 +158,15 @@ class Player(Ship):
         elif self.vel == 7:
             self.vel = 5
             self.boost = False
+    
+    #checks if player has lost all health and returns new player object
+    def death(self):
+        if self.health <=0:
+            self.health = 100
+            self.lives-= 1
+            self.x = 430
+            self.y = 440
+
 
 
 #Enemy ship class, inherits Ship class
@@ -224,6 +233,26 @@ def enemy_actions(enemies,player):
             player.lives -= 1
             enemies.remove(enemy)
 
+#helper to deal with progressing levels
+def level_set(enemies,level,wave_length):
+    if len(enemies) == 0:
+        level += 1
+        wave_length +=5
+        for i in range(wave_length):
+            enemy = Enemy(random.randrange(50,WIDTH-50), random.randrange(-1500,-100),random.choice(["red","blue","green"]))
+            enemies.append(enemy)
+    return (level,wave_length)
+
+#checks if game is over, if it is send to gameover screen
+def finishgame(player,redraw_window):
+    if player.lives <= 0:
+        end_time=0
+        start_time = pygame.time.get_ticks()
+        while end_time-start_time < 3000:
+            end_time = pygame.time.get_ticks()
+            redraw_window(True)
+        return False
+    else: return True
 
 def main():
     level = 0
@@ -233,16 +262,13 @@ def main():
     enemies = []
     wave_length = 5
     clock = pygame.time.Clock()
-    lost = False
-    lost_count = 0
     run = True
     
     player = Player(430,440) #places player
 
-    #renders most of game and updates
-    def redraw_window():
+    #renders most of game and updates, lost input changes visuals because game over
+    def redraw_window(lost):
         WIN.blit(BG,(0,0))
-
         if player.boost:
             WIN.blit(FIRE,(player.x+player.get_width()//2-7,player.y+player.get_height()))
 
@@ -255,52 +281,30 @@ def main():
         WIN.blit(level_label,(WIDTH-level_label.get_width()-10,10))
 
         if lost:
+            player.x = 1000
+            player.y = 1000
+            player.health = 0
             lost_label = lost_font.render("You Lost!!",1,(255,255,255))
             WIN.blit(lost_label,(WIDTH/2-lost_label.get_width()/2,150))
 
         pygame.display.update()
 
+
     while run:
         clock.tick(FPS)
-        redraw_window()
-
-        #checks if out of lives and starts gameover timer
-        if player.lives <= 0:
-            lost = True
-            lost_count += 1
-
-        #checks if player has lost all health and sets them back to spawnpoint
-        if player.health <=0:
-            player.lives-= 1
-            del player
-            player = Player(430,440)
-
-        #deletes player and sets them off of screen waits certain amount before stopping game
-        if lost:
-            del player
-            player = Player(1000,1000)
-            if(lost_count> FPS*3 ):
-                run = False
-            else:
-                continue
-        
-        #Sets which level you're in and adjusts amount of enemies accordingly
-        if len(enemies) == 0:
-            level += 1
-            wave_length +=5
-            for i in range(wave_length):
-                enemy = Enemy(random.randrange(50,WIDTH-50), random.randrange(-1500,-100),random.choice(["red","blue","green"]))
-                enemies.append(enemy)
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit()
         
-        
-        enemy_actions(enemies,player)
-        player.player_commands(pygame.key.get_pressed())
-        player.move_lasers(-LASER_VEL,enemies)
-        
+        redraw_window(False) #draw visuals
+        player.death()       #check if player died if they did adjust accordingly
+        level,wave_length = level_set(enemies,level,wave_length)  #check if level complete if complete return updated level ,wave_length
+        enemy_actions(enemies,player)                             #deal with all enemy actions
+        player.player_commands(pygame.key.get_pressed())          #deal with player input
+        player.move_lasers(-LASER_VEL,enemies)                    #deal with player lasers
+        run = finishgame(player,redraw_window)                    #check if game over and send to gameover screen
+
+
 #deals with all the main menu behaviour amd visuals
 def main_menu():
     title_font = pygame.font.SysFont("comicsans",70)
