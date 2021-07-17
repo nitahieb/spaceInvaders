@@ -7,7 +7,11 @@ pygame.font.init()
 pygame.mixer.init()
 BGMUSIC = pygame.mixer.Sound(os.path.join("Assets","BGmusic.wav"))
 LASER_SOUND= pygame.mixer.Sound(os.path.join("Assets", "laser7.wav"))
+PLAYER_EXPLODE = pygame.mixer.Sound(os.path.join("Assets", "playerexplode.wav"))
+ENEMY_EXPLODE = pygame.mixer.Sound(os.path.join("Assets", "enemyexplode.wav"))
 pygame.mixer.Sound.set_volume(BGMUSIC,0.3)
+pygame.mixer.Sound.set_volume(PLAYER_EXPLODE,0.3)
+pygame.mixer.Sound.set_volume(ENEMY_EXPLODE,0.3)
 BGMUSIC.play(-1)
 
 WIDTH,HEIGHT = 900, 500
@@ -127,6 +131,7 @@ class Player(Ship):
                 for obj in objs:
                     if laser.collision(obj):
                         objs.remove(obj)
+                        pygame.mixer.Sound(ENEMY_EXPLODE).play()
                         if laser in self.lasers:
                             self.lasers.remove(laser)
     
@@ -170,6 +175,7 @@ class Player(Ship):
     #checks if player has lost all health and returns new player object
     def death(self):
         if self.health <=0:
+            pygame.mixer.Sound(PLAYER_EXPLODE).play()
             self.health = 100
             self.lives-= 1
             self.x = 430
