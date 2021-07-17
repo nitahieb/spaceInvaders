@@ -215,8 +215,8 @@ def main():
         for enemy in enemies:
             enemy.draw()
         player.draw()
-        lives_label = main_font.render(f"Lives: {lives}", 1, (255,0,255))
-        level_label = main_font.render(f"Level: {level}",1,(255,0,255))
+        lives_label = main_font.render(f"Lives: {lives}", 1, (255,255,255))
+        level_label = main_font.render(f"Level: {level}",1,(255,255,255))
         WIN.blit(lives_label,(10,10))
         WIN.blit(level_label,(WIDTH-level_label.get_width()-10,10))
 
@@ -257,7 +257,7 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
+                quit()
 
         keys_pressed = pygame.key.get_pressed()
         if keys_pressed[pygame.K_SPACE]:
@@ -281,8 +281,22 @@ def main():
         
         player.move_lasers(-laser_vel,enemies)
         
+def main_menu():
+    title_font = pygame.font.SysFont("comicsans",70)
+    run = True
+    while run:
+        WIN.blit(BG,(0,0))
+        title_label = title_font.render("Press the mouse to begin",1,(255,255,255))
+        WIN.blit(title_label,(WIDTH/2 - title_label.get_width()/2,250))
 
+        pygame.display.update()
 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                main()
+    quit()
 
 if __name__ == "__main__":
-    main()
+    main_menu()
